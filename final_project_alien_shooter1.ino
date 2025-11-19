@@ -10,6 +10,15 @@ int rotationPin = A0;
 int dialValue = 0;
 int prevDialValue = 0;
 
+int alienType[16];
+int alienPos[16]; //no y pos needed
+int alienHealth[16];
+int alienTime[16];
+
+int tick;
+int spawnFrequency; //how often an alien spawns
+int previousSpawnTick;
+
 void setup()
 {
   lcd.begin (16,2); //Initialize the LCD.
@@ -19,11 +28,75 @@ void setup()
   pinMode(rotationPin, INPUT);
   
   Serial.begin(9600); //serial is just for debug--i was gonna use it for text but i like the immersion of using the lcd screen exclusively
+
+  randomSeed(analogRead(0));
 }
 
 void loop()
 {
-  IntroSequence();
+  //IntroSequence();
+  
+  tick = 0; //1 tick is 1 millisecond
+  spawnFrequency = 25; //100 ticks is 10 seconds
+  previousSpawnTick = 0;
+  
+  while(true) //game
+  {
+    lcd.clear();
+    
+    Crosshair(true);
+
+    Aliens();
+
+    delay(100);
+    
+    tick++;
+    
+    //spawn new alien
+    if(tick - previousSpawnTick == spawnFrequency)
+    {
+      //find a free slot
+      for(int i = 0; i < 16; i++)
+      {
+        if(alienType[i] == 0) //no alien assigned to spot
+        {
+          Serial.println("Alien spawned!");
+          
+          alienType[i] = 1; //TODO: random between 1 and 4
+          
+          //find a free position
+          bool posTaken = true;
+          while(posTaken)
+          {
+            alienPos[i] = random(0, 16);
+            Serial.println(alienPos[i]);
+            
+            posTaken = false;
+            
+            for(int j = 0; j < 16; j++)
+            {
+              if(j == i)
+                continue;
+              
+              if(alienPos[i] == alienPos[j])
+              {
+                posTaken = true;
+                break;
+              }
+            }
+          }
+          
+          alienHealth[i] = 3;
+          
+          alienTime[i] = 200; //200 ticks is 20 seconds
+          
+          previousSpawnTick = tick;
+          
+          break;
+        }
+      }
+    }
+  }
 }
 
 void IntroSequence()
@@ -61,7 +134,7 @@ void IntroSequence()
   
   while(digitalRead(button1Pin) == LOW)
   {
-    DisplayCrosshair();
+    Crosshair(false);
     delay(100);
   }
   
@@ -69,6 +142,8 @@ void IntroSequence()
   LcdPrint("I'll fire for ya !", true);
   
   LcdPrint("Let me tell you about the aliens", false);
+  LcdPrint("Each one takes 3 hits to kill,", false);
+  LcdPrint("but there are several breeds", true);
   LcdPrint("First up is the BASIC alien", false);
   
   //TODO: type "BASIC ALIEN" and show it scurrying below
@@ -80,16 +155,23 @@ void IntroSequence()
   LcdPrint("Good luck!", false);
 }
 
-void DisplayCrosshair()
+void Crosshair(bool shooting)
 {
   ReadDialValue(300, 740);
   
-  //lcd.clear();
-  lcd.setCursor(prevDialValue, 1);
-  lcd.print(" "); //clears only the previous tile
+  if(shooting)
+  {
+    
+  }
+  else
+  {
+    //lcd.clear();
+    lcd.setCursor(prevDialValue, 1);
+    lcd.print(" "); //clears only the previous tile
+  }
   
   lcd.setCursor(dialValue, 1);
-  lcd.print("X");
+  lcd.print("+");
 }
 
 /*
@@ -111,6 +193,18 @@ void ReadDialValue(int min, int max)
     dialValue = 15;
   else
     dialValue = map(dialValue, min, max, 0, 15); //using map worked better than i thought--i thought id have to manually set the range of every pixel because of the potentiometer being non-linear, but this works great
+}
+
+void Aliens()
+{
+  for(int i = 0; i < 16; i++)
+  {
+    if(alienType[i] != 0) //alien exists
+    {
+      lcd.setCursor(alienPos[i], 0);
+      lcd.print("O");
+    }
+  }
 }
 
 /* LcdPrint() is my way of streamlining printing text
