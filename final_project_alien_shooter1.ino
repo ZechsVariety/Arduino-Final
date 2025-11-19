@@ -17,6 +17,79 @@ int alienPos[16]; //no y pos needed
 int alienHealth[16];
 int alienTime[16];
 
+//SPRITES
+//ALIENS
+byte basic[] = {
+  B00000,
+  B00000,
+  B00000,
+  B01110,
+  B11111,
+  B10101,
+  B01110,
+  B10101
+};
+byte hyper[] = {
+  B00000,
+  B00100,
+  B01110,
+  B10101,
+  B01110,
+  B01110,
+  B11111,
+  B01010
+};
+byte prowler[] = {
+  B00000,
+  B01110,
+  B11111,
+  B00000,
+  B11111,
+  B01110,
+  B01110,
+  B10101
+};
+byte prowlerTrans[] = {
+  B00000,
+  B00100,
+  B01010,
+  B00000,
+  B01010,
+  B00100,
+  B01010,
+  B10101
+};
+byte multiplier[] = {
+  B00000,
+  B00000,
+  B10001,
+  B01010,
+  B01110,
+  B01010,
+  B10001,
+  B00000
+};
+byte splitted[] = {
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B01110,
+  B10001,
+  B00000,
+  B00000
+};
+byte shielder[] = { //shield sprite is just 'o'
+  B00000,
+  B00000,
+  B00000,
+  B11101,
+  B01010,
+  B11110,
+  B11110,
+  B10101
+};
+
 //SET AT GAME START
 int tick;
 int spawnFrequency; //how often an alien spawns
@@ -33,6 +106,17 @@ void setup()
   Serial.begin(9600); //serial is just for debug--i was gonna use it for text but i like the immersion of using the lcd screen exclusively
 
   randomSeed(analogRead(0));
+  
+  //INITIALIZE SPRITES (up to 8)
+  //ALIENS
+  lcd.createChar(1, basic);
+  lcd.createChar(2, hyper);
+  lcd.createChar(3, prowler);
+  lcd.createChar(4, prowlerTrans);
+  lcd.createChar(5, multiplier);
+  lcd.createChar(6, splitted);
+  lcd.createChar(7, shielder);
+  //lcd.createChar(8, basic); //thisll prolly be explosion
 }
 
 void loop()
@@ -92,7 +176,7 @@ void loop()
             }
           }
           
-          alienHealth[i] = 3;
+          alienHealth[i] = 5;
           
           alienTime[i] = 200; //200 ticks is 20 seconds
           
@@ -146,11 +230,11 @@ void IntroSequence()
   LcdPrint("I'll fire for ya !", true);
   
   LcdPrint("Let me tell you about the aliens", false);
-  LcdPrint("Each one takes 3 hits to kill,", false);
+  LcdPrint("Each one takes 5 hits to kill,", false);
   LcdPrint("but there are several breeds", true);
   LcdPrint("First up is the BASIC alien", false);
   
-  //TODO: type "BASIC ALIEN" and show it scurrying below
+  //TODO: type "BASIC" and show 2 scurrying below
   //TODO: other alien types
   
   LcdPrint("I haven't coded that yet tho", false);
@@ -227,18 +311,19 @@ void Aliens()
         
         if(alienHealth[i] > 0)
         {
-          lcd.print("X");
+          lcd.print("x");
         }
         else
         {
-          lcd.print("#");
+          lcd.print("@");
 
           alienType[i] = 0; //deletes alien, other values don't have to be deleted though
         }
       }
       else
       {
-        lcd.print("O");
+        //lcd.print("O");
+        lcd.write(1);
       }
     }
   }
