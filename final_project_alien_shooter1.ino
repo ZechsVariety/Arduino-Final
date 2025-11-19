@@ -8,6 +8,7 @@ bool button1WasPressed = false;
 
 int rotationPin = A0;
 int dialValue = 0;
+int prevDialValue = 0;
 
 void setup()
 {
@@ -22,10 +23,7 @@ void setup()
 
 void loop()
 {
-  //IntroSequence();
-  
-  DisplayCrosshair();
-  delay(100);
+  IntroSequence();
 }
 
 void IntroSequence()
@@ -48,31 +46,48 @@ void IntroSequence()
   
   LcdPrint("We have but one weapon", false);
   LcdPrint("powerful enough to kill them", false);
-  LcdPrint("and you...", true);
+  LcdPrint("      THE        POTENTIOMETER!", true);
   
+  LcdPrint("and you...", false);
   LcdPrint("You are in control.", true);
   
   LcdPrint("Why don't you give it a try?", true);
   
   lcd.clear();
-
   lcd.setCursor(0, 0);
-  lcd.print("- AIM WITH DIAL -");
+  lcd.print(" AIM USING DIAL ");
   
-  delay(10000);
-  //TODO: add tutorial aiming
+  delay(500);
   
-  LcdPrint("There are several alien types", true);
-  LcdPrint("Use the dial below to aim", true);
-  LcdPrint("You autofire in that direction", true);
-  LcdPrint("Good luck!", true);
+  while(digitalRead(button1Pin) == LOW)
+  {
+    DisplayCrosshair();
+    delay(100);
+  }
+  
+  LcdPrint("All you need to do is aim", false);
+  LcdPrint("I'll fire for ya !", true);
+  
+  LcdPrint("Let me tell you about the aliens", false);
+  LcdPrint("First up is the BASIC alien", false);
+  
+  //TODO: type "BASIC ALIEN" and show it scurrying below
+  //TODO: other alien types
+  
+  LcdPrint("I haven't coded that yet tho", false);
+  
+  LcdPrint("You ready to take them on?", true);
+  LcdPrint("Good luck!", false);
 }
 
 void DisplayCrosshair()
 {
   ReadDialValue(300, 740);
   
-  lcd.clear();
+  //lcd.clear();
+  lcd.setCursor(prevDialValue, 1);
+  lcd.print(" "); //clears only the previous tile
+  
   lcd.setCursor(dialValue, 1);
   lcd.print("X");
 }
@@ -85,6 +100,8 @@ void DisplayCrosshair()
 */
 void ReadDialValue(int min, int max)
 {
+  prevDialValue = dialValue;
+  
   dialValue = analogRead(rotationPin);
   //Serial.println(dialValue);
   
@@ -119,7 +136,7 @@ void LcdPrint(String input, bool wait)
   lcd.setCursor(0, 1);
   if(input[16] == ' ' || input[16] == NULL) //removes space
   {
-    LcdSlowPrint(input, 17, 32, 50); //gabes the next 16 digits for the bottom.
+    LcdSlowPrint(input, 17, 32, 30); //gabes the next 16 digits for the bottom.
   }
   else
   {
@@ -132,7 +149,7 @@ void LcdPrint(String input, bool wait)
       lcd.print("-");
       lcd.setCursor(1, 1);
     }
-    LcdSlowPrint(input, 16, 31, 50); //gabes the next 16 digits for the bottom.
+    LcdSlowPrint(input, 16, 31, 30); //gabes the next 16 digits for the bottom.
   }
 
   if(wait)
@@ -158,7 +175,7 @@ void LcdPrint(String input, bool wait)
   }
   else
   {
-    delay(1000);
+    delay(500);
   }
 }
 void LcdSlowPrint(String input, int start, int end, int speed)
