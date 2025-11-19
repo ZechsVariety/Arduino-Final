@@ -7,6 +7,7 @@ int button1Pin = 6;
 bool button1WasPressed = false;
 
 int rotationPin = A0;
+int dialValue = 0;
 
 void setup()
 {
@@ -15,9 +16,19 @@ void setup()
   pinMode(button1Pin, INPUT);
    
   pinMode(rotationPin, INPUT);
+  
+  Serial.begin(9600); //serial is just for debug--i was gonna use it for text but i like the immersion of using the lcd screen exclusively
 }
 
 void loop()
+{
+  //IntroSequence();
+  
+  DisplayCrosshair();
+  delay(100);
+}
+
+void IntroSequence()
 {
   LcdPrint("Welcome to Alien Shooter!", true);
   
@@ -43,12 +54,46 @@ void loop()
   
   LcdPrint("Why don't you give it a try?", true);
   
-  LcdPrint("AIM WITH DIAL", true);
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("- AIM WITH DIAL -");
+  
+  delay(10000);
+  //TODO: add tutorial aiming
   
   LcdPrint("There are several alien types", true);
   LcdPrint("Use the dial below to aim", true);
   LcdPrint("You autofire in that direction", true);
   LcdPrint("Good luck!", true);
+}
+
+void DisplayCrosshair()
+{
+  ReadDialValue(300, 740);
+  
+  lcd.clear();
+  lcd.setCursor(dialValue, 1);
+  lcd.print("X");
+}
+
+/*
+	This is how the potentiometer's value is converted to which pixel on the lcd screen it's aiming at
+    
+    min is the approximate value the potentiometer is at when it's pointed to the far left
+    max is far right
+*/
+void ReadDialValue(int min, int max)
+{
+  dialValue = analogRead(rotationPin);
+  //Serial.println(dialValue);
+  
+  if(dialValue < min) //far left
+    dialValue = 0;
+  else if(dialValue > max) //far right
+    dialValue = 15;
+  else
+    dialValue = map(dialValue, min, max, 0, 15); //using map worked better than i thought--i thought id have to manually set the range of every pixel because of the potentiometer being non-linear, but this works great
 }
 
 /* LcdPrint() is my way of streamlining printing text
