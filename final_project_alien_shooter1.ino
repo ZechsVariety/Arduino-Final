@@ -9,12 +9,15 @@ bool button1WasPressed = false;
 int rotationPin = A0;
 int dialValue = 0;
 int prevDialValue = 0;
+int shootSpeed = 10; //ticks
+bool shotThisTick = false;
 
 int alienType[16];
 int alienPos[16]; //no y pos needed
 int alienHealth[16];
 int alienTime[16];
 
+//SET AT GAME START
 int tick;
 int spawnFrequency; //how often an alien spawns
 int previousSpawnTick;
@@ -36,9 +39,9 @@ void loop()
 {
   //IntroSequence();
   
-  tick = 0; //1 tick is 1 millisecond
-  spawnFrequency = 25; //100 ticks is 10 seconds
-  previousSpawnTick = 0;
+  tick = 0; //1 tick is 100 milliseconds (.1 second)
+  spawnFrequency = 100; //100 ticks is 10 seconds
+  previousSpawnTick = -50; //set to -50 so that first alien spawn happens after 5 secs
   
   while(true) //game
   {
@@ -48,13 +51,16 @@ void loop()
 
     Aliens();
 
-    delay(100);
+    delay(100); //this is one tick
     
     tick++;
     
     //spawn new alien
     if(tick - previousSpawnTick == spawnFrequency)
     {
+      spawnFrequency--; //aliens spawn 1 tick faster each time
+      previousSpawnTick = tick;
+      
       //find a free slot
       for(int i = 0; i < 16; i++)
       {
@@ -89,8 +95,6 @@ void loop()
           alienHealth[i] = 3;
           
           alienTime[i] = 200; //200 ticks is 20 seconds
-          
-          previousSpawnTick = tick;
           
           break;
         }
@@ -161,7 +165,14 @@ void Crosshair(bool shooting)
   
   if(shooting)
   {
-    
+    if(tick % shootSpeed == 0)
+    {
+      shotThisTick = true;
+    }
+    else
+    {
+      shotThisTick = false;
+    }
   }
   else
   {
@@ -171,7 +182,14 @@ void Crosshair(bool shooting)
   }
   
   lcd.setCursor(dialValue, 1);
-  lcd.print("+");
+  
+  //i noticed ! kinda looked like a . shooting upwards lol
+  if(shotThisTick)
+  	lcd.print("!");
+  else
+    lcd.print(".");
+  
+  Serial.println(shotThisTick);
 }
 
 /*
@@ -202,7 +220,26 @@ void Aliens()
     if(alienType[i] != 0) //alien exists
     {
       lcd.setCursor(alienPos[i], 0);
-      lcd.print("O");
+      
+      if(shotThisTick && dialValue == alienPos[i])
+      {
+        alienHealth[i]--;
+        
+        if(alienHealth[i] > 0)
+        {
+          lcd.print("X");
+        }
+        else
+        {
+          lcd.print("#");
+
+          alienType[i] = 0; //deletes alien, other values don't have to be deleted though
+        }
+      }
+      else
+      {
+        lcd.print("O");
+      }
     }
   }
 }
