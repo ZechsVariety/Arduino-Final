@@ -17,6 +17,9 @@ int alienPos[16]; //no y pos needed
 int alienHealth[16];
 int alienTime[16];
 
+int score = 0; //score is just the amount of aliens you've killed
+bool gameOver = false;
+
 //SPRITES
 //ALIENS
 byte basic[] = {
@@ -95,6 +98,8 @@ int tick;
 int spawnFrequency; //how often an alien spawns
 int previousSpawnTick;
 
+void LcdPrint(String input, bool wait, bool clearScreen = true); //this allows the use of default arguments, and it must be above any uses of the function (thanks to the 8th post for the solution: https://forum.arduino.cc/t/default-arguments/40909/8)
+
 void setup()
 {
   lcd.begin (16,2); //Initialize the LCD.
@@ -126,14 +131,15 @@ void loop()
   tick = 0; //1 tick is 100 milliseconds (.1 second)
   spawnFrequency = 100; //100 ticks is 10 seconds
   previousSpawnTick = -50; //set to -50 so that first alien spawn happens after 5 secs
+  score = 0;
+  gameOver = false;
   
-  while(true) //game
+  while(!gameOver) //game
   {
     lcd.clear();
     
-    Crosshair(true);
-
     Aliens();
+    Crosshair(true);
 
     delay(100); //this is one tick
     
@@ -273,7 +279,7 @@ void Crosshair(bool shooting)
   else
     lcd.print(".");
   
-  Serial.println(shotThisTick);
+  //Serial.println(shotThisTick);
 }
 
 /*
@@ -303,29 +309,130 @@ void Aliens()
   {
     if(alienType[i] != 0) //alien exists
     {
-      lcd.setCursor(alienPos[i], 0);
-      
-      if(shotThisTick && dialValue == alienPos[i])
+      //alien time limit
+      alienTime[i]--;
+      Serial.println(alienTime[i]);
+      if(alienTime[i] < 100) //if you have less than 10 seconds left
       {
-        alienHealth[i]--;
+        lcd.setCursor(alienPos[i], 1);
+        //if(alienTime[i] > 10)
+          lcd.print(alienTime[i] / 10); //prints a timer underneath
+        //else
+          //lcd.print("!"); //i forgot that ! is the shooting sprite lol
+      }
+      
+      //game over
+      if(alienTime[i] == 0)
+      {
+        //show alien get to bottom row
+        lcd.setCursor(alienPos[i], 1);
+        lcd.write(1);
         
-        if(alienHealth[i] > 0)
-        {
-          lcd.print("x");
-        }
-        else
-        {
-          lcd.print("@");
-
-          alienType[i] = 0; //deletes alien, other values don't have to be deleted though
-        }
+        gameOver = true;
       }
       else
       {
-        //lcd.print("O");
-        lcd.write(1);
+        //draw alien
+
+        lcd.setCursor(alienPos[i], 0);
+		
+        //if shot
+        if(shotThisTick && dialValue == alienPos[i])
+        {
+          alienHealth[i]--;
+          alienTime[i] += 10; //add 1 second to the timer (so that if you start attacking with less than 5 seconds left, you still have a chance)
+
+          //hit sprite
+          if(alienHealth[i] > 0)
+          {
+            lcd.print("x");
+          }
+          else //explode
+          {
+            lcd.print("@");
+            
+            score++;
+
+            alienType[i] = 0; //deletes alien, other values don't have to be deleted though
+          }
+        }
+        else
+        {
+          //lcd.print("O");
+          lcd.write(1); //alien sprite
+        }
       }
     }
+  }
+  
+  if(gameOver) //doesnt do death sequence until all the aliens are rendered on screen for the sake of consistency
+  {
+    Serial.println("game over");
+    
+    delay(2000); //pause for a moment
+        
+    GameOver();
+  }
+}
+
+void GameOver()
+{
+  //disabling the screen clearing leads to a super easy but cool effect :D
+  LcdPrint("@@@@@@@@@@@@@@@@ @@@@@@@@@@@@@@@@", false, false); //this is supposed to look like explosions
+  delay(500);
+  LcdPrint("      YOU              DIED      ", true, false);
+  
+  LcdPrint("SCORE:          " + String(score), true); //thank you PaulRB for the solution for adding an int to a string value: https://forum.arduino.cc/t/help-with-int-to-string/928406
+  
+  //score messages
+  if(score == 0)
+  {
+    LcdPrint("Zero?? Did you even try?", false);
+    LcdPrint("All you gotta do is aim bud.", false);
+  }
+  else if(score <= 1)
+  {
+    LcdPrint("Hey, one's better than nothing!", false);
+  }
+  else if(score <= 5)
+  {
+    LcdPrint(String(score) + "? I know you can do better!", false);
+  }
+  else if(score <= 15)
+  {
+    LcdPrint(String(score) + "? That ain't bad!", false);
+  }
+  else if(score <= 30)
+  {
+    LcdPrint(String(score) + "? You're incredible!", false);
+  }
+  else if(score <= 50)
+  {
+    LcdPrint(String(score) + "? Literally how??", false);
+  }
+  else if(score <= 75)
+  {
+    LcdPrint(String(score) + "? Amazing. Just amazing.", false);
+  }
+  else if(score <= 100)
+  {
+    LcdPrint(String(score) + "? You're at the top!", false);
+  }
+  else //This is where i realized i had hit the string memory limit :( i'll have to phase out string values whenever i add more text
+  {
+  //  LcdPrint(String(score) + "? You gotta be cheating...", false);
+  //  LcdPrint("Past 100 must be impossible", false);
+  //  LcdPrint("If you really weren't cheating", false);
+  //  LcdPrint("You must love the game lol", false);
+  }
+  
+  LcdPrint("You ready to go again?", true);
+  LcdPrint("Alrighty then!", false);
+  
+  //delete all aliens
+  for(int i = 0; i < 16; i++)
+  {
+    alienType[i] = 0;
   }
 }
 
@@ -340,9 +447,12 @@ void Aliens()
    
    It also uses the wait function to draw an indicator (>) to show it's waiting for a button input, or continue automatically if not
 */
-void LcdPrint(String input, bool wait)
+void LcdPrint(String input, bool wait, bool clearScreen)
 {
-  lcd.clear();
+  Serial.println(input);
+  
+  if(clearScreen)
+  	lcd.clear();
 
   lcd.setCursor(0, 0);
   LcdSlowPrint(input, 0, 16, 50);
