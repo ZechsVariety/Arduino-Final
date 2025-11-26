@@ -17,6 +17,10 @@ int alienPos[16]; //no y pos needed
 int alienHealth[16];
 int alienTime[16];
 
+int alienSpecial1[16]; //this int is used for alien's abilities (ex: for the hyper alien, it's used for its run direction)
+int alienSpecial2[16];
+int alienSpecial3[16];
+
 int score = 0; //score is just the amount of aliens you've killed
 bool gameOver = false;
 
@@ -126,7 +130,8 @@ void setup()
 
 void loop()
 {
-  //IntroSequence();
+  if(!gameOver) //gameover will only be false here if the game was just started
+  	//IntroSequence();
   
   tick = 0; //1 tick is 100 milliseconds (.1 second)
   spawnFrequency = 100; //100 ticks is 10 seconds
@@ -158,7 +163,7 @@ void loop()
         {
           Serial.println("Alien spawned!");
           
-          alienType[i] = 1; //TODO: random between 1 and 4
+          alienType[i] = random(1, 3); //1-2
           
           //find a free position
           bool posTaken = true;
@@ -186,6 +191,14 @@ void loop()
           
           alienTime[i] = 200; //200 ticks is 20 seconds
           
+          if(alienType[i] == 2)
+          {
+          	alienSpecial1[i] = 1; //used for run dir. left = -1, right = 1, can't move = 0
+            //alienSpecial2[i] = 0; //binary if left is available
+            //alienSpecial3[i] = 0; //binary if right is available
+          	Serial.println(alienSpecial1[i]);
+          }
+            
           break;
         }
       }
@@ -310,8 +323,8 @@ void Aliens()
     if(alienType[i] != 0) //alien exists
     {
       //alien time limit
-      alienTime[i]--;
-      Serial.println(alienTime[i]);
+      //alienTime[i]--;
+      //Serial.println(alienTime[i]);
       if(alienTime[i] < 100) //if you have less than 10 seconds left
       {
         lcd.setCursor(alienPos[i], 1);
@@ -359,7 +372,71 @@ void Aliens()
         else
         {
           //lcd.print("O");
-          lcd.write(1); //alien sprite
+          
+          //alien type-specific code
+          if(alienType[i] == 1)
+          	lcd.write(1);
+          else if(alienType[i] == 2) //hyper
+          {
+          	lcd.write(2);
+            
+            if(
+              tick % 30 == 0
+              || (tick - 1) % 30 == 0 
+              || (tick - 2) % 30 == 0 
+              || (tick - 3) % 30 == 0 
+              || (tick - 4) % 30 == 0) //every 3 seconds for 5 ticks
+            {
+              alienSpecial2[i] = 1;
+              alienSpecial3[i] = 1;
+              
+              //detect walls
+              if(alienPos[i] - 1 < 0) //left
+                alienSpecial2[i] = 0;
+              else if(alienPos[i] + 1 > 15) //right
+                alienSpecial3[i] = 0;
+              
+              //detect other aliens
+              for(int j = 0; j < 16; j++)
+              {
+                if(i == j || alienType[j] == 0) //ignores itself and any despawned aliens
+                  continue;
+                
+                //Serial.println(j);
+                //alien to left
+                if(alienPos[i] - 1 == alienPos[j]) //left aint available
+                {
+                  alienSpecial2[i] = 0;
+                  //Serial.println("ALIEN LEFT!");
+                }
+                //alien to right
+                if(alienPos[i] + 1 == alienPos[j]) //right aint available
+                {
+                  alienSpecial3[i] = 0;
+                  //Serial.println("ALIEN RIGHT!");
+                }
+              }
+              
+              if(alienSpecial2[i] + alienSpecial3[i] == 0) //alien to both sides
+              {
+                alienSpecial1[i] = 0; //cant move
+                //Serial.println("can't move");
+              }
+              else if(alienSpecial2[i] == 0) //alien only to left
+              {
+                alienSpecial1[i] = 1; //right
+                //Serial.println("right");
+              }
+              else if(alienSpecial3[i] == 0) //alien only to right
+              {
+                alienSpecial1[i] = -1; //left
+                //Serial.println("left");
+              }
+              
+              //move
+              alienPos[i] += alienSpecial1[i];
+            }
+          }
         }
       }
     }
