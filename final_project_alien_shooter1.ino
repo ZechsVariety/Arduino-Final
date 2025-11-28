@@ -12,6 +12,8 @@ int prevDialValue = 0;
 int shootSpeed = 10; //ticks
 bool shotThisTick = false;
 
+//alien stuff
+
 int alienType[16];
 int alienPos[16]; //no y pos needed
 int alienHealth[16];
@@ -20,6 +22,10 @@ int alienTime[16];
 int alienSpecial1[16]; //this int is used for alien's abilities (ex: for the hyper alien, it's used for its run direction)
 int alienSpecial2[16];
 int alienSpecial3[16];
+
+//special alien modifiers
+int hyperFreq = 35; //35 instead of 40 makes it FEEL random, but you can actually get good at predicted when itll run and get an extra hit, adding a layer of skill :D
+int prowlerDuration = 20;
 
 int score = 0; //score is just the amount of aliens you've killed
 bool gameOver = false;
@@ -133,6 +139,8 @@ void loop()
   if(!gameOver) //gameover will only be false here if the game was just started
   	//IntroSequence();
   
+  Serial.println("GAME START!");
+  
   tick = 0; //1 tick is 100 milliseconds (.1 second)
   spawnFrequency = 100; //100 ticks is 10 seconds
   previousSpawnTick = -50; //set to -50 so that first alien spawn happens after 5 secs
@@ -163,29 +171,9 @@ void loop()
         {
           Serial.println("Alien spawned!");
           
-          alienType[i] = random(1, 3); //1-2
+          alienType[i] = random(1, 4); //1-3
           
-          //find a free position
-          bool posTaken = true;
-          while(posTaken)
-          {
-            alienPos[i] = random(0, 16);
-            Serial.println(alienPos[i]);
-            
-            posTaken = false;
-            
-            for(int j = 0; j < 16; j++)
-            {
-              if(j == i)
-                continue;
-              
-              if(alienPos[i] == alienPos[j])
-              {
-                posTaken = true;
-                break;
-              }
-            }
-          }
+          RandomAlienPos(i, false);
           
           alienHealth[i] = 5;
           
@@ -198,12 +186,82 @@ void loop()
             //alienSpecial3[i] = 0; //binary if right is available
           	Serial.println(alienSpecial1[i]);
           }
+          if(alienType[i] == 3)
+          {
+          	alienSpecial1[i] = 0; //tick timer for when it's invisible
+          }
             
           break;
         }
       }
     }
   }
+}
+
+void RandomAlienPos(int i, bool originalPosFailsafe)
+{
+  int originalPos = alienPos[i];
+  
+  //find a free position
+  for(int timeOut = 0; timeOut < 20; timeOut++) //times out after 20 attempts
+  {
+    alienPos[i] = random(0, 16);
+    Serial.print("attempt: ");
+    Serial.print(timeOut);
+    Serial.print(" pos: ");
+    Serial.println(alienPos[i]);
+
+    bool posTaken = false;
+    for(int j = 0; j < 16; j++) //run through each alien to check if the spot is taken
+    {
+      if(j == i) //ignore itself
+        continue;
+
+      if(alienPos[i] == alienPos[j])
+      {
+        posTaken = true;
+        break;
+      }
+    }
+    
+    if(!posTaken)
+      return;
+  }
+  
+  Serial.print("Failsafe position finder: ");
+  
+  //failsafe
+  if(originalPosFailsafe) //prowler uses this; if it cant find a new random spot, it just uses its original spot
+  {
+    alienPos[i] = originalPos; //alien wont move
+  }
+  else
+  {
+    for(int chronological = 0; chronological < 16; chronological++) //go from 0-15 chronologically to find a free space
+    {
+      bool posTaken = false;
+      for(int j = 0; j < 16; j++) //run through each alien to check if the spot is taken
+      {
+        if(j == i) //if it's on its own tile, it's free
+          break;
+
+        if(chronological == alienPos[j])
+        {
+          posTaken = true;
+          break;
+        }
+      }
+      
+      if(!posTaken)
+      {
+        alienPos[i] = chronological;
+        Serial.println(chronological);
+        return;
+      }
+    }
+  }
+  
+  Serial.println("ERROR: alien couldn't spawn");
 }
 
 void IntroSequence()
@@ -225,11 +283,11 @@ void IntroSequence()
   LcdPrint("rain from the skies", true);
   
   LcdPrint("We have but one weapon", false);
-  LcdPrint("powerful enough to kill them", false);
+  //LcdPrint("powerful enough to kill them", false);
   LcdPrint("      THE        POTENTIOMETER!", true);
   
-  LcdPrint("and you...", false);
-  LcdPrint("You are in control.", true);
+  //LcdPrint("and you...", false);
+  //LcdPrint("You are in control.", true);
   
   LcdPrint("Why don't you give it a try?", true);
   
@@ -249,8 +307,8 @@ void IntroSequence()
   LcdPrint("I'll fire for ya !", true);
   
   LcdPrint("Let me tell you about the aliens", false);
-  LcdPrint("Each one takes 5 hits to kill,", false);
-  LcdPrint("but there are several breeds", true);
+  //LcdPrint("Each one takes 5 hits to kill,", false);
+  //LcdPrint("but there are several breeds", true);
   LcdPrint("First up is the BASIC alien", false);
   
   //TODO: type "BASIC" and show 2 scurrying below
@@ -323,13 +381,14 @@ void Aliens()
     if(alienType[i] != 0) //alien exists
     {
       //alien time limit
-      //alienTime[i]--;
+      alienTime[i]--;
       //Serial.println(alienTime[i]);
       if(alienTime[i] < 100) //if you have less than 10 seconds left
       {
         lcd.setCursor(alienPos[i], 1);
         //if(alienTime[i] > 10)
-          lcd.print(alienTime[i] / 10); //prints a timer underneath
+          if(!(alienType[i] == 3 && alienSpecial1[i] > 0)) //for the prowler, ensure the number doesnt show unless the prowler is visible
+          	lcd.print(alienTime[i] / 10); //prints a timer underneath
         //else
           //lcd.print("!"); //i forgot that ! is the shooting sprite lol
       }
@@ -339,7 +398,13 @@ void Aliens()
       {
         //show alien get to bottom row
         lcd.setCursor(alienPos[i], 1);
-        lcd.write(1);
+        
+        if(alienType[i] == 1)
+          lcd.write(1);
+        else if(alienType[i] == 2)
+          lcd.write(2);
+        else if(alienType[i] == 3)
+          lcd.write(3);
         
         gameOver = true;
       }
@@ -352,6 +417,19 @@ void Aliens()
         //if shot
         if(shotThisTick && dialValue == alienPos[i])
         {
+          if(alienType[i] == 3) //prowler
+          {
+            if(alienSpecial1[i] > 0) //if prowler is in hidden state
+            {
+              break;
+            }
+            else
+            {
+              alienSpecial1[i] = prowlerDuration;
+              alienTime[i] += prowlerDuration; //prowler's time invisible doesn't count towards its timer
+            }
+          }
+          
           alienHealth[i]--;
           alienTime[i] += 10; //add 1 second to the timer (so that if you start attacking with less than 5 seconds left, you still have a chance)
 
@@ -378,14 +456,12 @@ void Aliens()
           	lcd.write(1);
           else if(alienType[i] == 2) //hyper
           {
-          	lcd.write(2);
-            
-            if(
-              tick % 30 == 0
-              || (tick - 1) % 30 == 0 
-              || (tick - 2) % 30 == 0 
-              || (tick - 3) % 30 == 0 
-              || (tick - 4) % 30 == 0) //every 3 seconds for 5 ticks
+          	if(
+              tick % hyperFreq == 0
+              || (tick - 1) % hyperFreq == 0 
+              || (tick - 2) % hyperFreq == 0 
+              || (tick - 3) % hyperFreq == 0 
+              || (tick - 4) % hyperFreq == 0) //every 3 seconds for 5 ticks
             {
               alienSpecial2[i] = 1;
               alienSpecial3[i] = 1;
@@ -436,6 +512,27 @@ void Aliens()
               //move
               alienPos[i] += alienSpecial1[i];
             }
+            
+            lcd.write(2); //hyper sprite
+          }
+          else if(alienType[i] == 3) //prowler
+          {
+            if(alienSpecial1[i] == 0) //regular
+              lcd.write(3); //prowler sprite
+            else
+              alienSpecial1[i]--;
+            
+            //transition sprites
+            if(alienSpecial1[i] == 2 || alienSpecial1[i] == prowlerDuration - 1) //shows on 2nd and 2nd last fram
+            {
+              lcd.write(4); //prowler invisible transition sprite
+            }
+            //else, it just doesnt render
+            
+            if(alienSpecial1[i] == prowlerDuration - 2) //teleports to a random spot on the frame before its transition sprite. if it teleported earlier, the other aliens' spawn positions could give away its new position
+            {
+              RandomAlienPos(i, true);
+            }
           }
         }
       }
@@ -464,36 +561,36 @@ void GameOver()
   //score messages
   if(score == 0)
   {
-    LcdPrint("Zero?? Did you even try?", false);
-    LcdPrint("All you gotta do is aim bud.", false);
+  //  LcdPrint("Zero?? Did you even try?", false);
+  //  LcdPrint("All you gotta do is aim bud.", false);
   }
   else if(score <= 1)
   {
-    LcdPrint("Hey, one's better than nothing!", false);
+  //  LcdPrint("Hey, one's better than nothing!", false);
   }
   else if(score <= 5)
   {
-    LcdPrint(String(score) + "? I know you can do better!", false);
+  //  LcdPrint(String(score) + "? I know you can do better!", false);
   }
   else if(score <= 15)
   {
-    LcdPrint(String(score) + "? That ain't bad!", false);
+  //  LcdPrint(String(score) + "? That ain't bad!", false);
   }
   else if(score <= 30)
   {
-    LcdPrint(String(score) + "? You're incredible!", false);
+  //  LcdPrint(String(score) + "? You're incredible!", false);
   }
   else if(score <= 50)
   {
-    LcdPrint(String(score) + "? Literally how??", false);
+  //  LcdPrint(String(score) + "? Literally how??", false);
   }
   else if(score <= 75)
   {
-    LcdPrint(String(score) + "? Amazing. Just amazing.", false);
+  //  LcdPrint(String(score) + "? Amazing. Just amazing.", false);
   }
   else if(score <= 100)
   {
-    LcdPrint(String(score) + "? You're at the top!", false);
+  //  LcdPrint(String(score) + "? You're at the top!", false);
   }
   else //This is where i realized i had hit the string memory limit :( i'll have to phase out string values whenever i add more text
   {
