@@ -141,7 +141,7 @@ void setup()
 void loop()
 {
   if(!gameOver) //gameover will only be false here if the game was just started
-  	//IntroSequence();
+  	IntroSequence();
   
   Serial.println("GAME START!");
   
@@ -277,19 +277,19 @@ void IntroSequence()
 {
   LcdPrint("Welcome to Alien Shooter!", true);
   
-  LcdPrint("After the alien invasion", false);
-  LcdPrint("and years of survival", false);
-  LcdPrint("humans had finally taken", false);
-  LcdPrint("the upper hand...", true);
+  LcdPrint("After the alien invasion,", false);
+  LcdPrint("and years of    survival,", false);
+  LcdPrint("humans had      finally taken", false);
+  LcdPrint("the upper hand  ...", true);
   
   LcdPrint("But we knew,", false);
-  LcdPrint("it would never last.", true);
+  LcdPrint("it would never  last.", true);
   
   LcdPrint("Now,", false);
-  LcdPrint("the aliens are sending", false);
+  LcdPrint("the aliens are  sending", false);
   LcdPrint("countless backup troops", false);
-  LcdPrint("and they're about to", false);
-  LcdPrint("rain from the skies", true);
+  LcdPrint("and they're     gonna rain", false);
+  LcdPrint("pouring down    from the skies", true);
   
   LcdPrint("We have but one weapon", false);
   //LcdPrint("powerful enough to kill them", false);
@@ -298,13 +298,16 @@ void IntroSequence()
   //LcdPrint("and you...", false);
   //LcdPrint("You are in control.", true);
   
-  LcdPrint("Why don't you give it a try?", true);
+  LcdPrint("Why don't you   give it a try?", true);
   
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(" AIM USING DIAL ");
   
   delay(500);
+  
+  //lcd.setCursor(16, 1);
+  //lcd.print(">");
   
   while(digitalRead(button1Pin) == LOW)
   {
@@ -315,17 +318,43 @@ void IntroSequence()
   LcdPrint("All you need to do is aim", false);
   LcdPrint("I'll fire for ya !", true);
   
-  LcdPrint("Let me tell you about the aliens", false);
+  //LcdPrint("Let me tell you about the aliens", false);
   //LcdPrint("Each one takes 5 hits to kill,", false);
   //LcdPrint("but there are several breeds", true);
-  LcdPrint("First up is the BASIC alien", false);
+  //LcdPrint("First up is the BASIC alien", false);
   
-  //TODO: type "BASIC" and show 2 scurrying below
-  //TODO: other alien types
+  //ALIENs
+  LcdPrint("Look out! There are 4 aliens: ", true);
+  //LcdPrint("1: BASIC        2: HYPER", true);
+  //LcdPrint("3: PROWLER      4: SHIELDER", true);
   
-  LcdPrint("I haven't coded that yet tho", false);
+  //basic
+  lcd.clear();
+  lcd.setCursor(13,1);
+  lcd.write(1);
+  LcdPrint("BASIC just sits there", true, false);
   
-  LcdPrint("You ready to take them on?", true);
+  //hyper
+  lcd.clear();
+  lcd.setCursor(13,1);
+  lcd.write(2);
+  LcdPrint("HYPER scurries  around", true, false);
+  
+  //prowler
+  lcd.clear();
+  lcd.setCursor(13,1);
+  lcd.write(3);
+  LcdPrint("PROWLER vanishes when hit", true, false);
+  
+  //shielder
+  lcd.clear();
+  lcd.setCursor(13,1);
+  lcd.write(7);
+  LcdPrint("SHIELDER guards itself often", true, false);
+  
+  LcdPrint("Each one takes 5 hits to kill", true);
+  
+  LcdPrint("You ready to    take them on?", true);
   LcdPrint("Good luck!", false);
 }
 
@@ -606,7 +635,7 @@ void GameOver()
   
   LcdPrint("SCORE:          " + String(score), true); //thank you PaulRB for the solution for adding an int to a string value: https://forum.arduino.cc/t/help-with-int-to-string/928406
   
-  //score messages
+  //score messages (had to scrap to save space :()
   if(score == 0)
   {
   //  LcdPrint("Zero?? Did you even try?", false);
@@ -651,7 +680,7 @@ void GameOver()
   //zech highscore
   if(score > zechsHighscore)
   {
-    LcdPrint("You beat Zech's highscore of " + String(zechsHighscore), true);
+    LcdPrint("You beat Zech's score of " + String(zechsHighscore) + "!", true);
   }
   
   LcdPrint("You ready to go again?", true);
