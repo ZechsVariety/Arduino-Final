@@ -26,6 +26,8 @@ int alienSpecial3[16];
 //special alien modifiers
 int hyperFreq = 35; //35 instead of 40 makes it FEEL random, but you can actually get good at predicted when itll run and get an extra hit, adding a layer of skill :D
 int prowlerDuration = 20;
+int shielderFreq = 30; //how often it shields
+int shielderDuration = 60; //how long it shields
 
 int score = 0; //score is just the amount of aliens you've killed
 bool gameOver = false;
@@ -171,7 +173,7 @@ void loop()
         {
           Serial.println("Alien spawned!");
           
-          alienType[i] = random(1, 4); //1-3
+          alienType[i] = random(1, 5); //1-4
           
           RandomAlienPos(i, false);
           
@@ -188,7 +190,12 @@ void loop()
           }
           if(alienType[i] == 3)
           {
-          	alienSpecial1[i] = 0; //tick timer for when it's invisible
+          	alienSpecial1[i] = 0; //tick timer for when it's invisible (shielder uses a different method to accomplish the same thing but in a more optimized way)
+          }
+          if(alienType[i] == 4)
+          {
+          	alienSpecial1[i] = 0; //used as a binary boolean for if it's shielding or not
+            alienSpecial2[i] = tick; //more runtime optimized than a tick timer: this variable isn't being changed every frame, only once per shield and once after shield--it stores the tick value when those happen for accurate timing. downside is, it requires an extra variable for whether the alien's shielding or not.
           }
             
           break;
@@ -335,7 +342,7 @@ void Crosshair(bool shooting)
       shotThisTick = false;
     }
   }
-  else
+  else //for tutorial
   {
     //lcd.clear();
     lcd.setCursor(prevDialValue, 1);
@@ -374,6 +381,7 @@ void ReadDialValue(int min, int max)
     dialValue = map(dialValue, min, max, 0, 15); //using map worked better than i thought--i thought id have to manually set the range of every pixel because of the potentiometer being non-linear, but this works great
 }
 
+//ai for all the aliens
 void Aliens()
 {
   for(int i = 0; i < 16; i++)
@@ -406,7 +414,7 @@ void Aliens()
         else if(alienType[i] == 3)
           lcd.write(3);
         
-        gameOver = true;
+        gameOver = true; //this will make the gameover script run after everything onscreen is drawn
       }
       else
       {
@@ -427,6 +435,14 @@ void Aliens()
             {
               alienSpecial1[i] = prowlerDuration;
               alienTime[i] += prowlerDuration; //prowler's time invisible doesn't count towards its timer
+            }
+          }
+          
+          if(alienType[i] == 4) //shielder
+          {
+            if(alienSpecial1[i] == 1) //if it's shielding
+            {
+              break;
             }
           }
           
@@ -532,6 +548,32 @@ void Aliens()
             if(alienSpecial1[i] == prowlerDuration - 2) //teleports to a random spot on the frame before its transition sprite. if it teleported earlier, the other aliens' spawn positions could give away its new position
             {
               RandomAlienPos(i, true);
+            }
+          }
+          else if(alienType[i] == 4) //shielder
+          {
+            if(alienSpecial1[i] == 0) //not shielding
+            {
+              if(alienSpecial2[i] + shielderFreq == tick) //check if it's been 3 secs (shielderFreq) since last alienSpecial2 update
+              {
+                alienSpecial1[i] = 1;
+                
+                alienSpecial2[i] = tick;
+              	alienTime[i] += shielderDuration; //time shielding doesn't count towards its timer
+              }
+              
+              lcd.write(7); //regular sprite
+            }
+            else //shielding
+            {
+              if(alienSpecial2[i] + shielderDuration == tick) //check if it's been 6 secs (shielderDuration) since last alienSpecial2 update
+              {
+                alienSpecial1[i] = 0;
+                
+                alienSpecial2[i] = tick;
+              }
+              
+              lcd.print("O"); //O looks like a shield >:)
             }
           }
         }
