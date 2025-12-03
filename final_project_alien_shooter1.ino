@@ -9,7 +9,7 @@ bool button1WasPressed = false;
 int rotationPin = A0;
 int dialValue = 0;
 int prevDialValue = 0;
-int shootSpeed = 10; //ticks
+int shootSpeed = 8; //ticks
 bool shotThisTick = false;
 
 //alien stuff
@@ -27,10 +27,12 @@ int alienSpecial3[16];
 int hyperFreq = 35; //35 instead of 40 makes it FEEL random, but you can actually get good at predicted when itll run and get an extra hit, adding a layer of skill :D
 int prowlerDuration = 20;
 int shielderFreq = 30; //how often it shields
-int shielderDuration = 60; //how long it shields
+int shielderDuration = 50; //how long it shields
 
 int score = 0; //score is just the amount of aliens you've killed
 bool gameOver = false;
+
+int zechsHighscore = 19;
 
 //SPRITES
 //ALIENS
@@ -413,6 +415,8 @@ void Aliens()
           lcd.write(2);
         else if(alienType[i] == 3)
           lcd.write(3);
+        else if(alienType[i] == 4)
+          lcd.write(7);
         
         gameOver = true; //this will make the gameover script run after everything onscreen is drawn
       }
@@ -440,6 +444,8 @@ void Aliens()
           
           if(alienType[i] == 4) //shielder
           {
+            alienSpecial2[i]++; //fixes a bug where if the shielder is hit as soon as it's supposed to stop shielding, it would remain shielding forever because the shield change logic would be skipped that tick
+            
             if(alienSpecial1[i] == 1) //if it's shielding
             {
               break;
@@ -573,7 +579,7 @@ void Aliens()
                 alienSpecial2[i] = tick;
               }
               
-              lcd.print("O"); //O looks like a shield >:)
+              lcd.print("o"); //O looks like a shield >:)
             }
           }
         }
