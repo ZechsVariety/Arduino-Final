@@ -648,6 +648,12 @@ void GameOver()
   //  LcdPrint("You must love the game lol", false);
   }
   
+  //zech highscore
+  if(score > zechsHighscore)
+  {
+    LcdPrint("You beat Zech's highscore of " + String(zechsHighscore), true);
+  }
+  
   LcdPrint("You ready to go again?", true);
   LcdPrint("Alrighty then!", false);
   
