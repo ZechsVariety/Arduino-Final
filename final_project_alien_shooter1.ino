@@ -8,7 +8,7 @@ bool button1WasPressed = false;
 
 int rotationPin = A0;
 int dialValue = 0;
-int prevDialValue = 0;
+int prevDialValue = 0; //this was only used for the tutorial to avoid screen clearing
 int shootSpeed = 8; //ticks
 bool shotThisTick = false;
 
@@ -32,7 +32,7 @@ int shielderDuration = 50; //how long it shields
 int score = 0; //score is just the amount of aliens you've killed
 bool gameOver = false;
 
-int zechsHighscore = 19;
+int zechsHighscore = 54;
 
 //SPRITES
 //ALIENS
